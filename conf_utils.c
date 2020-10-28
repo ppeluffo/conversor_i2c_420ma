@@ -133,17 +133,17 @@ float presion;
 
 	if(strcmp(command, "read") == 0) {
 		xprintf("Comando READ\n\r");
-			if ( bps120_read(&presion) ) {
-				xprintf("Presion:%.2f\r\n", presion);
-			} else {
-				xprintf("Error !!\r\n");
-			}
-
-		} else if (strcmp(command, "quit") == 0)	{
-			xprintf("Comando QUIT\n\r");
-	
+		if ( bps120_read(&presion) ) {
+			xprintf("Presion:%.2f\r\n", presion);
 		} else {
-			xprintf("Incorrect command.\r\n");
+			xprintf("Error !!\r\n");
+		}
+
+	} else if (strcmp(command, "quit") == 0)	{
+		xprintf("Comando QUIT\n\r");
+	
+	} else {
+		xprintf("Incorrect command.\r\n");
 	}
 	
 	_delay_ms(500);

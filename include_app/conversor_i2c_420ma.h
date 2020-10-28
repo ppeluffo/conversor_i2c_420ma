@@ -9,7 +9,7 @@
 #ifndef CONVERSOR_I2C_420MA_H_
 #define CONVERSOR_I2C_420MA_H_
 
-#define VERSION "R004 @ 2020-10-23" 
+#define VERSION "R001 @ 2020-10-28" 
 
 #define F_CPU 24000000
 
@@ -41,11 +41,11 @@ void VREF_init(void);
 void DAC0_setVal(uint16_t value);
 void test_dac(void);
 
-void I2C_init(void);
+void i2c_init(void);
 void executeCommand_i2c(char *command);
 void test_i2c(void);
-
 bool bps120_read( float *presion );
+
 
 #define MAX_COMMAND_LEN	8
 

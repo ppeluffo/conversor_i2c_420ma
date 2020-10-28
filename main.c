@@ -16,7 +16,7 @@ int main(void)
 	USART0_init();	// Configuro para 115200
 	VREF_init();
 	DAC0_init();
-	I2C_init();
+	i2c_init();
 	
 	APAGAR_LED();
 	
