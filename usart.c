@@ -41,6 +41,7 @@ char USART0_readChar(void)
 {
 	while (!(USART0.STATUS & USART_RXCIF_bm))
 	{
+		wdt_reset();
 		;
 	}
 	return USART0.RXDATAL;

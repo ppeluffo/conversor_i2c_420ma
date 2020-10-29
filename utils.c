@@ -8,6 +8,9 @@
 #include "include_app/conversor_i2c_420ma.h"
 #include "include_os/protected_io.h"
 
+void executeCommand(char *command);
+bool pressure2current(bool debug);
+
 // ---------------------------------------------------------------
 static inline void ccp_write_io(void *addr, uint8_t value)
 {
@@ -40,6 +43,27 @@ void flash_led(void)
 	PRENDER_LED();
 	_delay_ms( 50 );
 	APAGAR_LED();
+}
+// ---------------------------------------------------------------
+void reset(void)
+{
+	
+	ccp_write_io( (void *)&(RSTCTRL.SWRR), RSTCTRL_SWRF_bm );   /* Issue a Software Reset to initilize the CPU */
+}
+// ---------------------------------------------------------------
+int8_t WDT_init()
+{
+
+	ccp_write_io((void *)&(WDT.CTRLA),
+	WDT_PERIOD_8KCLK_gc /* 8K cycles (8.2s) */
+	| WDT_WINDOW_OFF_gc /* Off */);
+
+	return 0;
+}
+// ---------------------------------------------------------------
+void cls(void)
+{
+	xprintf("\x1B[2J\0");
 }
 // ---------------------------------------------------------------
 void test_led(void)
@@ -98,15 +122,44 @@ char c;
 	}
 }
 // ---------------------------------------------------------------
-void test_i2c(void)
+bool pressure2current(bool debug)
+{
+float presion;
+bool retS = false;
+float dac;
+	
+#ifdef BPS120
+	if ( bps120_read(&presion,debug )) {
+		xprintf("Presion:%.2f\r\n", presion);
+		dac = ( 1023 - 204 )/70;
+		dac *= presion;
+		dac += 204;
+		xprintf("dac:%d\r\n", (uint16_t)dac);
+		if ( dac > 1023) {
+			xprintf("ERROR dac.!!\r\n");
+		} else {
+			DAC0_setVal((uint16_t)dac);
+			retS = true;
+		}
+	}
+#endif
+	return(retS);
+
+}
+// ---------------------------------------------------------------
+void menu(void)
 {
 	
-char command[MAX_COMMAND_LEN];
-uint8_t index = 0;
-char c;
+	char command[MAX_COMMAND_LEN];
+	uint8_t index = 0;
+	char c;
 
+	xprintf("Spymovil: %s\r\n", VERSION);
+	xprintf("conversor_i2c_420mA\r\n");
+	
 	while(1) {
-		xprintf("cmd {read, quit}?\r\n");
+		
+		xprintf("cmds {presion,dpresion,led,cls,reset}?\r\n");
 
 		while (1) {
 			c = USART0_readChar();
@@ -120,38 +173,46 @@ char c;
 			if(c == '\r') {
 				command[index] = '\0';
 				index = 0;
-				executeCommand_i2c(command);
+				executeCommand(command);
 			}
 		}
 	}
 }
 // ---------------------------------------------------------------
-void executeCommand_i2c(char *command)
+void executeCommand(char *command)
 {
 
-float presion;
-
-	if(strcmp(command, "read") == 0) {
-		xprintf("Comando READ\n\r");
-		tipo_lectura = true;
-		if ( bps120_read(&presion) ) {
-			xprintf("Presion:%.2f\r\n", presion);
-		} else {
+	if (strcmp( strupr(command), "PRESION") == 0) {
+		xprintf("Comando PRESION\n\r");
+		if (!pressure2current(false)) {
+			xprintf("Error !!\r\n");
+		}	
+	
+	} else if (strcmp(strupr(command), "DPRESION") == 0) {
+		xprintf("Comando DEBUG PRESION\n\r");
+		if (!pressure2current(false)) {
 			xprintf("Error !!\r\n");
 		}
-
-	} else if (strcmp(command, "debug") == 0)	{
-		xprintf("Comando DEBUG\n\r");
-		tipo_lectura = false;
-		if ( bps120_read(&presion) ) {
-			xprintf("Presion:%.2f\r\n", presion);
-			} else {
-			xprintf("Error !!\r\n");
-		}		
-	
-	} else if (strcmp(command, "quit") == 0)	{
+		
+	} else if (strcmp(strupr(command), "QUIT") == 0) {
 		xprintf("Comando QUIT\n\r");
+
+	} else if (strcmp(strupr(command), "CLS") == 0) {
+		xprintf("Comando CLS\n\r");
+		cls();
 	
+	} else if (strcmp(strupr(command), "LED") == 0) {
+		xprintf("Comando LED\n\r");
+		flash_led();
+		
+	} else if (strcmp(strupr(command), "RESET") == 0) {
+		xprintf("Comando RESET\n\r");
+		cls();
+		while(1) {
+			xprintf(".");
+			_delay_ms(1000);
+		}
+		
 	} else {
 		xprintf("Incorrect command.\r\n");
 	}
