@@ -46,6 +46,7 @@ void executeCommand_i2c(char *command);
 void test_i2c(void);
 bool bps120_read( float *presion );
 
+bool tipo_lectura;
 
 #define MAX_COMMAND_LEN	8
 

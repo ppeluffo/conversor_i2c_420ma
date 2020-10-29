@@ -133,12 +133,22 @@ float presion;
 
 	if(strcmp(command, "read") == 0) {
 		xprintf("Comando READ\n\r");
+		tipo_lectura = true;
 		if ( bps120_read(&presion) ) {
 			xprintf("Presion:%.2f\r\n", presion);
 		} else {
 			xprintf("Error !!\r\n");
 		}
 
+	} else if (strcmp(command, "debug") == 0)	{
+		xprintf("Comando DEBUG\n\r");
+		tipo_lectura = false;
+		if ( bps120_read(&presion) ) {
+			xprintf("Presion:%.2f\r\n", presion);
+			} else {
+			xprintf("Error !!\r\n");
+		}		
+	
 	} else if (strcmp(command, "quit") == 0)	{
 		xprintf("Comando QUIT\n\r");
 	
