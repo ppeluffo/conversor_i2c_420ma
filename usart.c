@@ -13,6 +13,8 @@
 // ---------------------------------------------------------------
 void USART0_init(void)
 {
+	// Configuro para 115200
+	
 	PORTA.DIR &= ~PIN1_bm;
 	PORTA.DIR |= PIN0_bm;
 	
@@ -37,14 +39,42 @@ void USART0_sendString(char *str)
 	}
 }
 // ---------------------------------------------------------------
-char USART0_readChar(void)
+char USART0_readChar(bool echo)
 {
+char c;
+
 	while (!(USART0.STATUS & USART_RXCIF_bm))
 	{
 		wdt_reset();
 		;
 	}
-	return USART0.RXDATAL;
+	c = USART0.RXDATAL;
+	if ( echo)
+		USART0_sendChar(c);
+	return(c);
 }
 // ---------------------------------------------------------------
+bool USART0_getChar( char *c )
+{
 
+	if ( USART0.STATUS & USART_RXCIF_bm) {
+		*c = USART0.RXDATAL;
+		return(true);
+	}
+	return(false);
+}
+// ---------------------------------------------------------------
+void uart_test(void)
+{
+	uint8_t count = 0;
+	
+	while (1)
+	{
+
+		wdt_reset();
+		led_flash();
+		xprintf("UART test: %03d\n\r", count++);
+		_delay_ms(1000);
+	}
+}
+// ---------------------------------------------------------------
