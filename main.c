@@ -19,6 +19,8 @@ void SENSOR_init(void);
 // ---------------------------------------------------------------
 int main(void)
 {
+uint8_t tc_H, tc_L;
+
     // Inicializo
 	WDT_init();
 	CLKCTRL_init();
@@ -32,7 +34,6 @@ int main(void)
 	
 	I2C_init();
 	SENSOR_init();
-	print_banner();
 
 	//led_test();
 	//uart_test();
@@ -42,7 +43,13 @@ int main(void)
 	//npa730_test();
 	
 	debug_level = FLASH_0_read_eeprom_byte(0);
-	xprintf("Log_level 0x%02x\r\n", debug_level);
+	tc_H = FLASH_0_read_eeprom_byte(1);
+	tc_L = FLASH_0_read_eeprom_byte(2);
+	xprintf("tc_H=0x%02x, tc_L=0x%02x", tc_H, tc_L);
+	
+	bps120_offset = (tc_H << 8) + tc_L;
+	//bps120_offset = 100;
+	print_banner();
 
 	switch( debug_level ) {
 		case DEBUG_LEVEL_OFF:
@@ -100,17 +107,18 @@ void medirMagnitud(void)
 {
 float magnitud;
 float h_cms, temp;
+uint16_t pcounts;
 
 	switch (sensor_id) {
 		case SENSOR_BPS120:
-			bps120_read( &magnitud );
+			bps120_read( &magnitud, &pcounts );
 			h_cms = PSI_2_CMS * magnitud;
 			if ( DEBUG_LOW ) {
 				xprintf("Presion: %.02f(psi)\r\n", magnitud);
 				xprintf("         %.02f(cms)\r\n", h_cms);
 			}
 			//
-			mag2current( 10.5, 70.3 , h_cms );
+			mag2current( 0, 70.3 , h_cms );
 			break;
 		case SENSOR_NPA730:
 			npa730_read( &magnitud );
@@ -370,7 +378,7 @@ char c;
 
 	xprintf("Calibracion de span.\r\n");
 	while(1) {
-		xprintf("(c)cero, (s)span, (q)salir\r\n");
+		xprintf("(c)cero, (s)span, (b)bps120, (q)salir\r\n");
 		c = USART0_readChar(true);
 		xprintf("\r\n");
 		switch( toupper(c)) {
@@ -379,6 +387,9 @@ char c;
 			break;
 		case 'S':
 			DAC0_setVal(1023);
+			break;
+		case 'B':
+			bps120_calibrar();
 			break;
 		case 'Q':
 			xprintf("Exit modo calibrar.\r\n");
@@ -392,10 +403,12 @@ void print_banner(void)
 	xprintf("\r\n");
 	xprintf("I2C to 4-20ma converter.\r\n");
 	xprintf("Version: %s @ %s\r\n", FW_VERSION, FW_FECHA);
-		
+	xprintf("Log_level 0x%02x\r\n", debug_level);
+
 	switch ( sensor_id ) {
 		case SENSOR_BPS120:
 		xprintf("Converter init. Sensor Pressure BPS120\r\n");
+		xprintf("BPS120 Offset: %d\r\n", bps120_offset);
 		break;
 	case SENSOR_NPA730:
 		xprintf("Converter init. Sensor Pressure NPA730\r\n");

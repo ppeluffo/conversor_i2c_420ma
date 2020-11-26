@@ -106,6 +106,7 @@ float dac;
 		
 	if ( dac > 1023) {
 		xprintf("ERROR dac.!!\r\n");
+		DAC0_setVal(0);
 	} else {
 		DAC0_setVal((uint16_t)dac);
 		retS = true;

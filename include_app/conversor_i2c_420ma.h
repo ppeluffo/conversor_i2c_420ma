@@ -59,8 +59,10 @@ int I2C_master_read_NI  ( const uint8_t i2c_dev_address, const uint16_t i2c_rdSt
 #define PSI_2_CMS	70.31
 
 void BPS120_init(void);
-bool bps120_read( float *presion );
+bool bps120_read( float *presion, uint16_t *counts );
 void bps120_test(void);
+void bps120_calibrar(void);
+
 #define HMAX_CMS_BPS120		70.31
 #define PSI_MAX_BPS120		1.0
 
@@ -93,6 +95,7 @@ typedef enum { DMASK_LOW = 0x02, DMASK_MED = 0x04, DMASK_HIGH = 0x08 } t_debugma
 	
 uint8_t sensor_id;
 t_debuglevel debug_level;
+uint16_t bps120_offset;
 
 #define DEBUG_LOW   ( debug_level & DMASK_LOW )
 #define DEBUG_MED   ( debug_level & DMASK_MED )

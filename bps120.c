@@ -24,7 +24,7 @@ void BPS120_init(void)
 	I2C_reset();
 }
 // ---------------------------------------------------------------
-bool bps120_read( float *presion )
+bool bps120_read( float *presion, uint16_t *counts )
 {
 	// Lee el sensor usando bps120_raw_read que devuelve 2 bytes.
 	// Los convierte a presion.
@@ -57,8 +57,9 @@ float h_cms = 0;
 		msbPres = buffer[0]  & 0x3F;
 		lsbPres = buffer[1];
 		pcounts = (msbPres << 8) + lsbPres;
-		psi = 1.0 * ( pcounts - OUTMIN_BPS120 ) * ( PMAX_BPS120 - PMIN_BPS120) / ( OUTMAX_BPS120 - OUTMIN_BPS120 ) + PMIN_BPS120;
-		//psi = PSI_MAX_BPS120 * pcounts / 16384;
+		*counts = pcounts;
+		//psi = 1.0 * ( pcounts - OUTMIN_BPS120 ) * ( PMAX_BPS120 - PMIN_BPS120) / ( OUTMAX_BPS120 - OUTMIN_BPS120 ) + PMIN_BPS120;
+		psi = PMAX_BPS120 * ( pcounts - bps120_offset) / OUTMAX_BPS120;
 		h_cms = PSI_2_CMS * psi;
 		
 		if ( DEBUG_MED ) {
@@ -68,7 +69,7 @@ float h_cms = 0;
 			xprintf("         cms=%.2f\r\n", h_cms);
 		}
 		
-		*presion =psi;
+		*presion = psi;
 		return(true);
 	} else {
 		return(false);
@@ -115,12 +116,13 @@ void bps120_test(void)
 char c;
 float presion;
 float h_cms;
+uint16_t pcounts;
 
 	xprintf("BPS120 Test: Presione cualquier tecla...\r\n");
 
 	while (1) {
 		c = USART0_readChar(true);
-		if ( bps120_read(&presion)) {
+		if ( bps120_read(&presion, &pcounts)) {
 			xprintf("Presion:%.2f(psi)\r\n", presion);
 			h_cms = HMAX_CMS_BPS120 * presion;
 			xprintf("Presion: %.02f(psi)\r\n", presion);
@@ -131,5 +133,31 @@ float h_cms;
 		}
 	}
 	
+}
+//----------------------------------------------------------------
+void bps120_calibrar(void)
+{
+float presion;
+uint16_t pcounts, totalcounts;
+uint8_t i, tc_H, tc_L;
+
+
+	xprintf("BPS120: Calibracion en vacio...\r\n");
+	totalcounts = 0;
+	for (i=0; i<10; i++) {
+		bps120_read( &presion, &pcounts );
+		xprintf(".");
+		wdt_reset();
+		totalcounts += pcounts;
+		_delay_ms(500);
+	}
+	totalcounts /= 10;
+	xprintf("\r\nBPS120 Offset = %d\r\n", totalcounts);
+	tc_H = (uint8_t)( (totalcounts>>8) & 0xFF);
+	tc_L = (uint8_t)( totalcounts  &0xFF );
+	xprintf("tc_H=0x%02x, tc_L=0x%02x", tc_H, tc_L);
+	
+	FLASH_0_write_eeprom_byte(1, tc_H  );
+	FLASH_0_write_eeprom_byte(2, tc_L  );	
 }
 //----------------------------------------------------------------
